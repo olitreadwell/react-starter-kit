@@ -1,3 +1,7 @@
+import { auth } from "@/lib/auth";
+import { useBillingQuery } from "@/lib/queries/billing";
+import { useSessionQuery } from "@/lib/queries/session";
+import { type ThemePreference, useTheme } from "@/lib/theme";
 import {
   Button,
   Card,
@@ -9,12 +13,22 @@ import {
   Label,
   Separator,
   Switch,
+  ToggleGroup,
+  ToggleGroupItem,
 } from "@repo/ui";
+import { useId } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Bell, CreditCard, Palette, Shield, User } from "lucide-react";
-import { auth } from "@/lib/auth";
-import { useBillingQuery } from "@/lib/queries/billing";
-import { useSessionQuery } from "@/lib/queries/session";
+import {
+  Bell,
+  CreditCard,
+  type LucideIcon,
+  Monitor,
+  Moon,
+  Palette,
+  Shield,
+  Sun,
+  User,
+} from "lucide-react";
 
 export const Route = createFileRoute("/(app)/settings")({
   component: Settings,
@@ -55,7 +69,6 @@ function Settings() {
           </CardContent>
         </Card>
 
-        {/* Billing */}
         <BillingCard />
 
         {/* Notification Settings */}
@@ -115,29 +128,7 @@ function Settings() {
           </CardContent>
         </Card>
 
-        {/* Appearance Settings */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
-              <CardTitle>Appearance</CardTitle>
-            </div>
-            <CardDescription>
-              Customize the look and feel of the application.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="dark-mode">Dark Mode</Label>
-                <p className="text-sm text-muted-foreground">
-                  Toggle dark mode theme
-                </p>
-              </div>
-              <Switch id="dark-mode" />
-            </div>
-          </CardContent>
-        </Card>
+        <AppearanceCard />
       </div>
     </div>
   );
@@ -233,6 +224,73 @@ function BillingCard() {
             </div>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const THEME_OPTIONS: Array<{
+  value: ThemePreference;
+  label: string;
+  icon: LucideIcon;
+}> = [
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: Monitor },
+];
+
+function AppearanceCard() {
+  const { preference, setPreference } = useTheme();
+  const themeLabelId = useId();
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Palette className="h-5 w-5" />
+          <CardTitle>Appearance</CardTitle>
+        </div>
+        <CardDescription>
+          Customize the look and feel of the application.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            {/* Not a <label>: it names a radiogroup, which htmlFor can't target. */}
+            <Label asChild>
+              <span id={themeLabelId}>Theme</span>
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Choose light, dark, or follow your OS setting.
+            </p>
+          </div>
+          {/* type="single" brings radiogroup semantics and arrow keys, so no
+              keyboard handling here. It emits "" when the active item is
+              toggled off, which the lookup below ignores. */}
+          <ToggleGroup
+            type="single"
+            value={preference}
+            onValueChange={(value) => {
+              const option = THEME_OPTIONS.find((o) => o.value === value);
+              if (option) setPreference(option.value);
+            }}
+            aria-labelledby={themeLabelId}
+            className="rounded-lg border bg-muted p-1"
+          >
+            {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
+              <ToggleGroupItem
+                key={value}
+                value={value}
+                aria-label={label}
+                title={label}
+                className="size-9 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+              >
+                <Icon className="h-4 w-4" />
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
       </CardContent>
     </Card>
   );

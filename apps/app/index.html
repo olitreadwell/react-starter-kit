@@ -15,6 +15,37 @@
     <meta property="og:image" content="" />
     <meta name="theme-color" content="#fafafa" />
 
+    <!--
+      Apply the saved theme before first paint, otherwise a dark-mode user sees
+      a white flash while the bundle loads. Mirrors apps/app/lib/theme.tsx: same
+      storage key, same JSON encoding (Jotai's atomWithStorage).
+
+      Both hexes repeat --theme-color from globals.css – light on the meta tag
+      above, dark here. Stylesheets aren't parsed yet, so this script can't read
+      them; ThemeSync takes over once React mounts.
+    -->
+    <script>
+      (() => {
+        let preference;
+        try {
+          preference = JSON.parse(localStorage.getItem("theme"));
+        } catch {
+          // Storage unavailable or corrupt – fall back to the OS setting.
+        }
+        const dark =
+          preference === "dark" ||
+          (preference !== "light" &&
+            matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+        if (dark) {
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute("content", "#0f0f0f");
+        }
+      })();
+    </script>
+
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/logo192.png" />
 
