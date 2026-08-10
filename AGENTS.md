@@ -7,7 +7,7 @@
 - `packages/ui/` — shadcn/ui components (new-york style)
 - `packages/core/` — Shared utilities
 - `db/` — Drizzle ORM schemas and migrations (Neon PostgreSQL)
-- `infra/` — Terraform (Cloudflare Workers, Hyperdrive, DNS)
+- `infra/` — Terraform (Hyperdrive and optional R2 storage; Wrangler owns Workers and DNS)
 - `docs/` — VitePress docs; `docs/adr/` for architecture decision records
 
 ## Tech Stack
@@ -24,14 +24,16 @@
 
 ```bash
 bun dev                        # Start web + api + app concurrently
-bun build                      # Build email → web → api → app (in order)
+bun run build                  # Build email, web, api, and app workspaces
 bun run test                   # Vitest (watch mode; --run for single run)
 bun lint                       # ESLint with cache
 bun typecheck                  # tsc --build
 bun ui:add <component>         # Add shadcn/ui component to packages/ui
 
 # Per-app: bun {web,app,api}:{dev,build,deploy}; test for app/api, check for web
-# Database: bun db:{push,generate,migrate,studio,seed} (append :staging or :prod)
+# Database: bun db:{push,generate,migrate,studio,seed,export}
+#   :staging / :production on migrate, studio, export; seed stops at :staging;
+#   push and generate are local-only
 ```
 
 ## Architecture
@@ -51,3 +53,8 @@ bun ui:add <component>         # Add shadcn/ui component to packages/ui
 - Prefer explicit, readable code over clever or compressed patterns.
 - Use precise TypeScript types. Avoid `any` and unnecessary type assertions — let the compiler enforce correctness.
 - Document non-obvious trade-offs and decisions. Explain why, not what — every word must add value.
+
+## Markdown
+
+- Prose is not hard-wrapped: keep each paragraph on one line and use paragraphs, lists and headings for structure. Prettier enforces this with `proseWrap: "never"`.
+- Keep a blank line after a VitePress container's opening marker and before its closing `:::`. Prettier does not recognise `:::`, so an adjacent line gets folded into the marker, turning the body into the container title and swallowing everything up to the next `:::`.
