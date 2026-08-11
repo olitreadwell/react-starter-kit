@@ -1,41 +1,20 @@
 # Validate Auth Schema
 
-Validate that the Drizzle ORM schema in `db/schema/` matches the Better Auth requirements.
+Check that the Drizzle schema in `db/schema/` still satisfies what Better Auth expects. Better Auth derives its required tables from the enabled plugins, so the generated JSON — not the upstream docs — is the source of truth:
 
-## Steps
+```bash
+bun run db/scripts/generate-auth-schema.ts
+```
 
-1. **Generate Better Auth schema reference**:
+The script builds a real auth instance from `apps/api/lib/auth.ts` with fixed placeholder credentials, every optional integration switched on, so the output is the full set of tables rather than the subset your environment happens to enable. Per field it carries the `type`, the `required` and `unique` flags, and the reference target — nothing else.
 
-   ```bash
-   bun run db/scripts/generate-auth-schema.ts
-   ```
+Compare that output against `db/schema/` and report:
 
-2. **Compare with current Drizzle schema**:
-   - Review all files in `db/schema/` (user.ts, organization.ts, etc.)
-   - Check that each Better Auth table has corresponding Drizzle table
-   - Verify field types, constraints, and relationships match
-   - Ensure table names and field names align with Better Auth expectations
+- Tables Better Auth expects that are missing, and tables no plugin in `auth.ts` needs any more.
+- Field-level drift: missing or extra columns, mismatched types, and `required` or `unique` flags that disagree.
+- Foreign keys pointing at the wrong table or column.
+- Defaults, `onDelete`, and indexes are **not** in the generated output — they are this project's decisions. Check those against the conventions in `db/AGENTS.md` instead, and do not report them as Better Auth drift.
+- Local naming that must stay mapped, not renamed away: Better Auth's `account` is our `identity` table.
+- Project-specific columns, indexes, and constraints are expected and fine on their own. Flag any that constrain a write Better Auth performs: a `NOT NULL` column with no database default breaks every insert into that table, and an extra unique or check constraint can reject a row Better Auth considers valid. Fields that must participate in its models belong in `additionalFields` rather than added to the table behind its back.
 
-3. **Key validation points**:
-   - **Table mapping**: Better Auth `account` → Drizzle `identity`
-   - **Required fields**: All Better Auth required fields are present and correctly typed
-   - **Relationships**: Foreign key references match (userId, organizationId, etc.)
-   - **Constraints**: Unique fields, required fields, default values
-   - **Field types**: string/text, boolean, date/timestamp, number types
-
-4. **Report findings**:
-   - List any missing tables or fields
-   - Identify type mismatches
-   - Note incorrect constraints or relationships
-   - Suggest specific fixes needed
-
-## Context
-
-Better Auth requires specific database schema structure. The generated JSON serves as the source of truth for what Better Auth expects, while the Drizzle schema in `db/schema/` is our actual implementation that must match.
-
-## Success Criteria
-
-- All Better Auth required tables exist in Drizzle schema
-- Field types and constraints match Better Auth requirements
-- Foreign key relationships are correctly implemented
-- Custom schema additions (like organizations) don't conflict with Better Auth expectations
+Report findings with the specific fix for each. Do not run `db:push`, `db:generate`, or `db:migrate` as part of a validation — schema changes are a separate, deliberate step.
