@@ -34,7 +34,7 @@ The two route groups serve different auth requirements:
 
 ## Root Route
 
-The root route (`__root.tsx`) creates the router context and wraps everything in an error boundary:
+The root route (`__root.tsx`) creates the router context and wraps the outlet in an error boundary:
 
 ```tsx
 // apps/app/routes/__root.tsx
@@ -46,15 +46,31 @@ export const Route = createRootRouteWithContext<{
 
 function Root() {
   return (
-    <AppErrorBoundary>
-      <Outlet />
-      {import.meta.env.DEV && <TanStackRouterDevtools />}
-    </AppErrorBoundary>
+    <>
+      <AppErrorBoundary>
+        <Outlet />
+      </AppErrorBoundary>
+      <Devtools />
+    </>
   );
 }
 ```
 
 The `queryClient` in context is what makes `beforeLoad` guards possible – route guards can prefetch or read cached data before rendering.
+
+## Devtools
+
+`components/devtools.tsx` mounts [TanStack Devtools](https://tanstack.com/devtools/latest) with the Router and Query panels as plugins of one shell. It renders `null` outside development, so nothing reaches your production bundle.
+
+::: tip
+
+The trigger is invisible until you hover the bottom-right corner. `Ctrl+Shift+X` opens the panel without it.
+
+:::
+
+Position, theme, panel side, and the hotkey are settings the shell persists per browser. The `config` prop only seeds them – once you change one from the panel's settings tab, that value wins.
+
+`Devtools` sits outside `AppErrorBoundary` and carries its own boundary, so a render failure in either subtree can't take down the other.
 
 ## Auth Guards
 
